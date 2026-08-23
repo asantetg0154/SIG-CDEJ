@@ -1,7 +1,8 @@
 import { TRPCError } from "@trpc/server";
 import { and, desc, eq } from "drizzle-orm";
+import { parse as parseCookie } from "cookie";
 import { z } from "zod";
-import { attendanceRecords, auditLogs, documents, educationRecords, financeTransactions, groups, healthRecords, leaveRequests, notifications, nutritionRecords, participants, staffProfiles, suppliers } from "../drizzle/schema";
+import { activities, activityReminderSettings, activityStaffAssignments, attendanceRecords, auditLogs, documents, educationRecords, financeTransactions, groups, healthRecords, leaveRequests, notifications, nutritionRecords, participants, staffProfiles, suppliers } from "../drizzle/schema";
 import { getDb, getActivityList, getDashboardSnapshot, getGlobalSearch, getInventoryList, getLeaveList, getParticipantList, getStaffList, logAudit } from "./db";
 import { canAccessDomain, type SecureDomain } from "./permissions";
 import { COOKIE_NAME } from "@shared/const";
@@ -9,6 +10,8 @@ import { getSessionCookieOptions } from "./_core/cookies";
 import { systemRouter } from "./_core/systemRouter";
 import { protectedProcedure, publicProcedure, router } from "./_core/trpc";
 import { storagePut } from "./storage";
+import { createHeartbeatJob, updateHeartbeatJob } from "./_core/heartbeat";
+import { ACTIVITY_REMINDER_CRON } from "./activityReminders";
 
 function requireDomain(user: { role: "user" | "admin"; cdejRole: "pastor" | "cpc" | "coordinator" | "facilitator" | "volunteer" | "participant" }, domain: SecureDomain) {
   if (user.role === "admin" || canAccessDomain(user.cdejRole, domain)) return;
@@ -119,6 +122,82 @@ export const appRouter = router({
     list: protectedProcedure.query(async ({ ctx }) => {
       requireDomain(ctx.user, "activities");
       return getActivityList();
+    }),
+    assignmentBoard: protectedProcedure.query(async ({ ctx }) => {
+      requireDomain(ctx.user, "staff");
+      const db = await getDb();
+      if (!db) return { activities: [], staff: [], assignments: [] };
+      const [activityRows, staffRows, assignmentRows] = await Promise.all([db.select().from(activities).orderBy(desc(activities.startsAt)), db.select().from(staffProfiles), db.select().from(activityStaffAssignments)]);
+      const staff = staffRows.filter(member => member.status === "active" && (member.cdejRole === "facilitator" || member.cdejRole === "volunteer"));
+      const staffById = new Map(staff.map(member => [member.id, member]));
+      const activityById = new Map(activityRows.map(activity => [activity.id, activity]));
+      return {
+        activities: activityRows,
+        staff: staff.map(member => ({ id: member.id, name: `${member.firstName} ${member.lastName}`, role: member.cdejRole, category: member.volunteerCategory })),
+        assignments: assignmentRows.map(assignment => ({
+          ...assignment,
+          activityTitle: activityById.get(assignment.activityId)?.title ?? "Activité supprimée",
+          activityStartsAt: activityById.get(assignment.activityId)?.startsAt ?? null,
+          staffName: staffById.has(assignment.staffId) ? `${staffById.get(assignment.staffId)!.firstName} ${staffById.get(assignment.staffId)!.lastName}` : "Membre indisponible",
+          staffRole: staffById.get(assignment.staffId)?.cdejRole ?? "volunteer",
+        })),
+      };
+    }),
+    assignStaff: protectedProcedure.input(z.object({ activityId: z.number().int().positive(), staffId: z.number().int().positive(), assignmentType: z.enum(["facilitation", "support", "logistics", "nutrition", "supervision"]) })).mutation(async ({ input, ctx }) => {
+      requireDomain(ctx.user, "staff");
+      if (!["pastor", "cpc", "coordinator"].includes(ctx.user.cdejRole) && ctx.user.role !== "admin") throw new TRPCError({ code: "FORBIDDEN", message: "Seuls le pasteur, le CPC ou le coordinateur peuvent modifier les affectations." });
+      const db = await getDb();
+      if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR" });
+      const [activity] = await db.select().from(activities).where(eq(activities.id, input.activityId)).limit(1);
+      const [staff] = await db.select().from(staffProfiles).where(eq(staffProfiles.id, input.staffId)).limit(1);
+      if (!activity) throw new TRPCError({ code: "NOT_FOUND", message: "Activité introuvable." });
+      if (!staff || staff.status !== "active" || !["facilitator", "volunteer"].includes(staff.cdejRole)) throw new TRPCError({ code: "BAD_REQUEST", message: "Le membre sélectionné doit être un animateur ou volontaire actif." });
+      const existing = await db.select().from(activityStaffAssignments).where(and(eq(activityStaffAssignments.activityId, input.activityId), eq(activityStaffAssignments.staffId, input.staffId))).limit(1);
+      if (existing.length) throw new TRPCError({ code: "CONFLICT", message: "Cette personne est déjà affectée à l’activité." });
+      await db.insert(activityStaffAssignments).values(input);
+      await logAudit(ctx.user.id, "assigned_activity", "activity_staff_assignment", `${input.activityId}:${input.staffId}`, { assignmentType: input.assignmentType });
+      return { success: true };
+    }),
+    removeStaffAssignment: protectedProcedure.input(z.object({ id: z.number().int().positive() })).mutation(async ({ input, ctx }) => {
+      requireDomain(ctx.user, "staff");
+      if (!["pastor", "cpc", "coordinator"].includes(ctx.user.cdejRole) && ctx.user.role !== "admin") throw new TRPCError({ code: "FORBIDDEN", message: "Seuls le pasteur, le CPC ou le coordinateur peuvent modifier les affectations." });
+      const db = await getDb();
+      if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR" });
+      await db.delete(activityStaffAssignments).where(eq(activityStaffAssignments.id, input.id));
+      await logAudit(ctx.user.id, "removed_activity_assignment", "activity_staff_assignment", input.id);
+      return { success: true };
+    }),
+  }),
+  activityReminders: router({
+    settings: protectedProcedure.query(async ({ ctx }) => {
+      requireDomain(ctx.user, "staff");
+      const db = await getDb();
+      if (!db) return { enabled: false, leadHours: 24, scheduleCronTaskUid: null };
+      const [settings] = await db.select().from(activityReminderSettings).limit(1);
+      return settings ?? { enabled: false, leadHours: 24, scheduleCronTaskUid: null };
+    }),
+    configure: protectedProcedure.input(z.object({ enabled: z.boolean(), leadHours: z.number().int().min(1).max(168) })).mutation(async ({ input, ctx }) => {
+      requireDomain(ctx.user, "staff");
+      if (!["pastor", "cpc", "coordinator"].includes(ctx.user.cdejRole) && ctx.user.role !== "admin") throw new TRPCError({ code: "FORBIDDEN", message: "Seuls le pasteur, le CPC ou le coordinateur peuvent configurer les rappels." });
+      const db = await getDb();
+      if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR" });
+      let [settings] = await db.select().from(activityReminderSettings).limit(1);
+      if (!settings) {
+        await db.insert(activityReminderSettings).values({ enabled: false, leadHours: input.leadHours, updatedByUserId: ctx.user.id });
+        [settings] = await db.select().from(activityReminderSettings).limit(1);
+      }
+      if (!settings) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR" });
+      const sessionToken = parseCookie(ctx.req.headers.cookie ?? "")[COOKIE_NAME] ?? "";
+      let taskUid = settings.scheduleCronTaskUid;
+      if (input.enabled && !taskUid) {
+        const job = await createHeartbeatJob({ name: `cdej-activity-reminders-${settings.id}`, cron: ACTIVITY_REMINDER_CRON, path: "/api/scheduled/activity-reminders", description: "Rappels internes quotidiens des activités affectées du SIG-CDEJ" }, sessionToken);
+        taskUid = job.taskUid;
+      } else if (taskUid) {
+        await updateHeartbeatJob(taskUid, { enable: input.enabled }, sessionToken);
+      }
+      await db.update(activityReminderSettings).set({ enabled: input.enabled, leadHours: input.leadHours, scheduleCronTaskUid: taskUid, updatedByUserId: ctx.user.id }).where(eq(activityReminderSettings.id, settings.id));
+      await logAudit(ctx.user.id, input.enabled ? "enabled_activity_reminders" : "disabled_activity_reminders", "activity_reminder_settings", settings.id, { leadHours: input.leadHours, taskUid });
+      return { success: true, taskUid };
     }),
   }),
   attendance: router({

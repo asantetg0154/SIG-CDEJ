@@ -29,3 +29,16 @@
 - [x] Scope facilitator and volunteer dashboard metrics to their own assignments and operational responsibilities.
 - [x] Make the global search shortcut open a visible, accessible search surface even when the navigation is collapsed or mobile.
 - [x] Verify scoped dashboard data and shortcut-driven search in authenticated facilitator and volunteer user sessions.
+- [x] Build an administrator page to view, add, and remove facilitator/volunteer assignments for each activity.
+- [x] Add auditable server procedures that manage activity assignments and enforce role-based access.
+- [x] Add an internal scheduled reminder process that notifies linked staff about upcoming assigned activities without sending email.
+- [x] Validate assignment management, reminder deduplication, notification visibility, and responsive rendering before checkpointing.
+- [x] Retry and verify the reminder schema migration once database access is stable.
+- [ ] Publish the current checkpoint, then enable the production reminder schedule from the Affectations d’activités page.
+- [x] Add an all/past/current/upcoming filter so administrators can review and remove every activity assignment.
+- [x] Confirm the reminder table, assignment marker column, and schedule index using a successful post-migration schema check.
+- [x] Verify assignment creation/removal, deduplicated notification delivery, and mobile rendering in the authenticated preview.
+- [ ] Create and remove a real activity assignment in the authenticated preview and confirm each state change in the filtered list.
+- [ ] Verify that a linked recipient sees one generated activity reminder in the notification center during an authenticated preview session.
+- [ ] Push the current stable SIG-CDEJ project state to the requested GitHub repository and verify the remote branch.
+- [x] Re-attempt the reminder migration and confirm every required table, column, and index before implementing the reminder workflow.

@@ -9,6 +9,7 @@ import NotFound from "@/pages/NotFound";
 import ParticipantsPage from "@/pages/ParticipantsPage";
 import { ParticipantProfilePage, StaffProfilePage } from "@/pages/ProfilePages";
 import { AdministrationPage, DocumentsPage, NotificationsPage, ReportsPage } from "@/pages/RecordsPages";
+import ActivityAssignmentsPage from "@/pages/ActivityAssignmentsPage";
 import { ActivitiesPage, AttendancePage, LeavesPage, StaffPage } from "@/pages/TeamOpsPages";
 import { Route, Switch } from "wouter";
 
@@ -22,6 +23,7 @@ function Router() {
     <Route path="/staff/:id" component={() => <Workspace><StaffProfilePage /></Workspace>} />
     <Route path="/staff" component={() => <Workspace><StaffPage /></Workspace>} />
     <Route path="/activities" component={() => <Workspace><ActivitiesPage /></Workspace>} />
+    <Route path="/activity-assignments" component={() => <Workspace><ActivityAssignmentsPage /></Workspace>} />
     <Route path="/attendance" component={() => <Workspace><AttendancePage /></Workspace>} />
     <Route path="/leaves" component={() => <Workspace><LeavesPage /></Workspace>} />
     <Route path="/education" component={() => <Workspace><EducationPage /></Workspace>} />

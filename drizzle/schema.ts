@@ -140,9 +140,23 @@ export const activityStaffAssignments = mysqlTable(
     activityId: int("activityId").notNull(),
     staffId: int("staffId").notNull(),
     assignmentType: mysqlEnum("assignmentType", ["facilitation", "support", "logistics", "nutrition", "supervision"]).default("support").notNull(),
+    reminderSentAt: timestamp("reminderSentAt"),
     createdAt: timestamp("createdAt").defaultNow().notNull(),
   },
   table => [index("activity_staff_activity_idx").on(table.activityId), index("activity_staff_person_idx").on(table.staffId)],
+);
+
+export const activityReminderSettings = mysqlTable(
+  "activityReminderSettings",
+  {
+    id: int("id").autoincrement().primaryKey(),
+    enabled: boolean("enabled").default(false).notNull(),
+    leadHours: int("leadHours").default(24).notNull(),
+    scheduleCronTaskUid: varchar("scheduleCronTaskUid", { length: 65 }),
+    updatedByUserId: int("updatedByUserId"),
+    updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+  },
+  table => [index("activity_reminder_task_idx").on(table.scheduleCronTaskUid)],
 );
 
 export const attendanceRecords = mysqlTable(

@@ -17,6 +17,7 @@ const navigation = [
   { label: "Participants", path: "/participants", icon: UsersRound },
   { label: "Personnel & volontaires", path: "/staff", icon: ShieldCheck },
   { label: "Activités & calendrier", path: "/activities", icon: CalendarDays },
+  { label: "Affectations d’activités", path: "/activity-assignments", icon: UsersRound },
   { label: "Présences", path: "/attendance", icon: ClipboardCheck },
   { label: "Congés & permissions", path: "/leaves", icon: Activity },
   { label: "Notifications", path: "/notifications", icon: Bell },
