@@ -40,5 +40,5 @@
 - [x] Verify assignment creation/removal, deduplicated notification delivery, and mobile rendering in the authenticated preview.
 - [ ] Create and remove a real activity assignment in the authenticated preview and confirm each state change in the filtered list.
 - [ ] Verify that a linked recipient sees one generated activity reminder in the notification center during an authenticated preview session.
-- [ ] Push the current stable SIG-CDEJ project state to the requested GitHub repository and verify the remote branch.
+- [x] Push the current stable SIG-CDEJ project state to the requested GitHub repository and verify the remote branch.
 - [x] Re-attempt the reminder migration and confirm every required table, column, and index before implementing the reminder workflow.
