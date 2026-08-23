@@ -15,5 +15,9 @@
 - [x] Build document-library, linked-file metadata, notification center, report/export, and print-ready user interfaces.
 - [x] Add PWA manifest, responsive behavior, accessible forms, empty/loading/error states, and confirmation safeguards for potentially destructive actions.
 - [x] Verify TypeScript, Vitest coverage, authorization behavior, desktop/mobile rendering, and key dashboard and module flows.
-- [ ] Create a final project checkpoint after every completed item is marked accurately.
+- [x] Create a final project checkpoint after every completed item is marked accurately.
 - [x] Add route-level tests covering denied and allowed access to health, finance, audit, and dashboard domains.
+- [x] Make the global search bar available directly from the navigation menu and improve its participant, staff, and activity results.
+- [x] Add a clearly visible, accessible dark-mode toggle for low-light use across desktop and mobile navigation.
+- [x] Extend the dashboard with interactive attendance and finance summary charts while preserving financial access restrictions.
+- [ ] Validate the enhanced search, dark-mode, and interactive analytics flows and save an updated project checkpoint.

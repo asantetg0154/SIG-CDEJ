@@ -237,12 +237,12 @@ export async function getInventoryList() {
   return rows.map(row => ({ ...row, supplierName: row.supplierId ? suppliersById.get(row.supplierId) ?? "—" : "—", isLow: Number(row.quantity) <= Number(row.alertThreshold) }));
 }
 
-export async function getDashboardSnapshot(period: "week" | "month" | "quarter") {
+export async function getDashboardSnapshot(period: "week" | "month" | "quarter", includeFinance = false) {
   await ensureDemoData();
   const db = await getDb();
   if (!db) return null;
-  const [participantRows, staffRows, activityRows, attendanceRows, leaveRows, educationRows, healthRows, inventoryRows, notificationRows] = await Promise.all([
-    db.select().from(participants), db.select().from(staffProfiles), db.select().from(activities), db.select().from(attendanceRecords), db.select().from(leaveRequests), db.select().from(educationRecords), db.select().from(healthRecords), db.select().from(inventoryItems), db.select().from(notifications).orderBy(desc(notifications.createdAt)),
+  const [participantRows, staffRows, activityRows, attendanceRows, leaveRows, educationRows, healthRows, inventoryRows, notificationRows, financeRows] = await Promise.all([
+    db.select().from(participants), db.select().from(staffProfiles), db.select().from(activities), db.select().from(attendanceRecords), db.select().from(leaveRequests), db.select().from(educationRecords), db.select().from(healthRecords), db.select().from(inventoryItems), db.select().from(notifications).orderBy(desc(notifications.createdAt)), includeFinance ? db.select().from(financeTransactions) : Promise.resolve([]),
   ]);
   const now = new Date();
   const periodStart = new Date(now);
@@ -259,6 +259,19 @@ export async function getDashboardSnapshot(period: "week" | "month" | "quarter")
     ...notificationRows.filter(item => !item.isRead).slice(0, 4).map(item => ({ id: `notification-${item.id}`, title: item.title, message: item.message, priority: item.priority, href: item.actionUrl ?? "/" })),
     ...inventoryRows.filter(item => Number(item.quantity) <= Number(item.alertThreshold)).map(item => ({ id: `stock-${item.id}`, title: `Stock bas : ${item.name}`, message: `${item.quantity} ${item.unit} disponible(s), seuil ${item.alertThreshold}.`, priority: "high" as const, href: "/inventory" })),
   ].slice(0, 5);
+  const financeByCategory = Array.from(new Set(financeRows.map(row => row.category))).map(category => {
+    const categoryRows = financeRows.filter(row => row.category === category);
+    return {
+      label: category,
+      income: categoryRows.filter(row => row.type === "income").reduce((total, row) => total + Number(row.amount), 0),
+      expense: categoryRows.filter(row => row.type === "expense").reduce((total, row) => total + Number(row.amount), 0),
+    };
+  });
+  const financeSummary = includeFinance ? {
+    income: financeRows.filter(row => row.type === "income").reduce((total, row) => total + Number(row.amount), 0),
+    expense: financeRows.filter(row => row.type === "expense").reduce((total, row) => total + Number(row.amount), 0),
+    byCategory: financeByCategory,
+  } : null;
   return {
     cards: {
       participants: participantRows.filter(row => row.status === "active").length,
@@ -287,6 +300,7 @@ export async function getDashboardSnapshot(period: "week" | "month" | "quarter")
     ageBuckets,
     groups: groupRows.map(group => ({ label: group.name, count: groupCounts.get(group.id) ?? 0 })),
     education: educationRows.map(row => ({ term: row.termLabel, score: Number(row.averageScore ?? 0), status: row.resultStatus })),
+    financeSummary,
     alerts,
   };
 }
@@ -297,8 +311,8 @@ export async function getGlobalSearch(query: string) {
   if (!term) return [];
   const [participantRows, staffRows, activityRows, documentRows] = await Promise.all([getParticipantList({}), getStaffList(), getActivityList(), (await getDb())?.select().from(documents) ?? []]);
   return [
-    ...participantRows.filter(row => `${row.firstName} ${row.lastName} ${row.participantCode}`.toLocaleLowerCase().includes(term)).map(row => ({ type: "Participant", label: `${row.firstName} ${row.lastName}`, detail: row.participantCode, href: "/participants" })),
-    ...staffRows.filter(row => `${row.firstName} ${row.lastName} ${row.employeeCode}`.toLocaleLowerCase().includes(term)).map(row => ({ type: "Personnel", label: `${row.firstName} ${row.lastName}`, detail: row.cdejRole, href: "/staff" })),
+    ...participantRows.filter(row => `${row.firstName} ${row.lastName} ${row.participantCode}`.toLocaleLowerCase().includes(term)).map(row => ({ type: "Participant", label: `${row.firstName} ${row.lastName}`, detail: row.participantCode, href: `/participants/${row.id}` })),
+    ...staffRows.filter(row => `${row.firstName} ${row.lastName} ${row.employeeCode}`.toLocaleLowerCase().includes(term)).map(row => ({ type: "Personnel", label: `${row.firstName} ${row.lastName}`, detail: row.cdejRole, href: `/staff/${row.id}` })),
     ...activityRows.filter(row => `${row.title} ${row.category}`.toLocaleLowerCase().includes(term)).map(row => ({ type: "Activité", label: row.title, detail: row.category, href: "/activities" })),
     ...documentRows.filter(row => `${row.title} ${row.originalFilename}`.toLocaleLowerCase().includes(term)).map(row => ({ type: "Document", label: row.title, detail: row.category, href: "/documents" })),
   ].slice(0, 12);
