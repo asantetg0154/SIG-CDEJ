@@ -1,42 +1,42 @@
 import { Toaster } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
+import DashboardLayout from "@/components/DashboardLayout";
+import ErrorBoundary from "@/components/ErrorBoundary";
+import { ThemeProvider } from "@/contexts/ThemeContext";
+import DashboardPage from "@/pages/DashboardPage";
+import { EducationPage, FinancePage, HealthPage, InventoryPage, NutritionPage } from "@/pages/FollowUpPages";
 import NotFound from "@/pages/NotFound";
+import ParticipantsPage from "@/pages/ParticipantsPage";
+import { ParticipantProfilePage, StaffProfilePage } from "@/pages/ProfilePages";
+import { AdministrationPage, DocumentsPage, NotificationsPage, ReportsPage } from "@/pages/RecordsPages";
+import { ActivitiesPage, AttendancePage, LeavesPage, StaffPage } from "@/pages/TeamOpsPages";
 import { Route, Switch } from "wouter";
-import ErrorBoundary from "./components/ErrorBoundary";
-import { ThemeProvider } from "./contexts/ThemeContext";
-import Home from "./pages/Home";
+
+function Workspace({ children }: { children: React.ReactNode }) { return <DashboardLayout>{children}</DashboardLayout>; }
 
 function Router() {
-  // make sure to consider if you need authentication for certain routes
-  return (
-    <Switch>
-      <Route path={"/"} component={Home} />
-      <Route path={"/404"} component={NotFound} />
-      {/* Final fallback route */}
-      <Route component={NotFound} />
-    </Switch>
-  );
+  return <Switch>
+    <Route path="/" component={() => <Workspace><DashboardPage /></Workspace>} />
+    <Route path="/participants/:id" component={() => <Workspace><ParticipantProfilePage /></Workspace>} />
+    <Route path="/participants" component={() => <Workspace><ParticipantsPage /></Workspace>} />
+    <Route path="/staff/:id" component={() => <Workspace><StaffProfilePage /></Workspace>} />
+    <Route path="/staff" component={() => <Workspace><StaffPage /></Workspace>} />
+    <Route path="/activities" component={() => <Workspace><ActivitiesPage /></Workspace>} />
+    <Route path="/attendance" component={() => <Workspace><AttendancePage /></Workspace>} />
+    <Route path="/leaves" component={() => <Workspace><LeavesPage /></Workspace>} />
+    <Route path="/education" component={() => <Workspace><EducationPage /></Workspace>} />
+    <Route path="/health" component={() => <Workspace><HealthPage /></Workspace>} />
+    <Route path="/nutrition" component={() => <Workspace><NutritionPage /></Workspace>} />
+    <Route path="/inventory" component={() => <Workspace><InventoryPage /></Workspace>} />
+    <Route path="/finance" component={() => <Workspace><FinancePage /></Workspace>} />
+    <Route path="/documents" component={() => <Workspace><DocumentsPage /></Workspace>} />
+    <Route path="/notifications" component={() => <Workspace><NotificationsPage /></Workspace>} />
+    <Route path="/reports" component={() => <Workspace><ReportsPage /></Workspace>} />
+    <Route path="/administration" component={() => <Workspace><AdministrationPage /></Workspace>} />
+    <Route component={NotFound} />
+  </Switch>;
 }
 
-// NOTE: About Theme
-// - First choose a default theme according to your design style (dark or light bg), than change color palette in index.css
-//   to keep consistent foreground/background color across components
-// - If you want to make theme switchable, pass `switchable` ThemeProvider and use `useTheme` hook
-
-function App() {
-  return (
-    <ErrorBoundary>
-      <ThemeProvider
-        defaultTheme="light"
-        // switchable
-      >
-        <TooltipProvider>
-          <Toaster />
-          <Router />
-        </TooltipProvider>
-      </ThemeProvider>
-    </ErrorBoundary>
-  );
+export default function App() {
+  return <ErrorBoundary><ThemeProvider defaultTheme="light" switchable><TooltipProvider><Toaster richColors position="top-right" /><Router /></TooltipProvider></ThemeProvider></ErrorBoundary>;
 }
-
-export default App;
