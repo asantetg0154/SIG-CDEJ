@@ -20,4 +20,5 @@
 - [x] Make the global search bar available directly from the navigation menu and improve its participant, staff, and activity results.
 - [x] Add a clearly visible, accessible dark-mode toggle for low-light use across desktop and mobile navigation.
 - [x] Extend the dashboard with interactive attendance and finance summary charts while preserving financial access restrictions.
-- [ ] Validate the enhanced search, dark-mode, and interactive analytics flows and save an updated project checkpoint.
+- [x] Validate the enhanced search, dark-mode, and interactive analytics flows and save an updated project checkpoint.
+- [x] Confirm interactive search-result navigation and dark-theme rendering in an authenticated preview session.
