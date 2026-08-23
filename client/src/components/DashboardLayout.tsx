@@ -1,6 +1,7 @@
 import { useAuth } from "@/_core/hooks/useAuth";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { Sidebar, SidebarContent, SidebarFooter, SidebarHeader, SidebarInset, SidebarMenu, SidebarMenuButton, SidebarMenuItem, SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
 import { startLogin } from "@/const";
@@ -9,6 +10,7 @@ import { useIsMobile } from "@/hooks/useMobile";
 import { Activity, Archive, Bell, BookOpenCheck, CalendarDays, ChevronDown, ClipboardCheck, FileBarChart, FileText, HeartPulse, LayoutDashboard, LogOut, Menu, Moon, Package, SearchCheck, Settings, ShieldCheck, Sun, UsersRound, WalletCards } from "lucide-react";
 import { useLocation } from "wouter";
 import GlobalSearch from "./GlobalSearch";
+import { useEffect, useState } from "react";
 
 const navigation = [
   { label: "Vue d’ensemble", path: "/", icon: LayoutDashboard },
@@ -37,7 +39,14 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   const { theme, toggleTheme } = useTheme();
   const [location, setLocation] = useLocation();
   const isMobile = useIsMobile();
+  const [searchOpen, setSearchOpen] = useState(false);
   const active = navigation.find(item => item.path === location) ?? navigation[0];
+
+  useEffect(() => {
+    const openSearch = () => setSearchOpen(true);
+    window.addEventListener("cdej:open-search", openSearch);
+    return () => window.removeEventListener("cdej:open-search", openSearch);
+  }, []);
 
   if (loading) return <div className="flex min-h-screen items-center justify-center bg-background"><div className="h-9 w-9 animate-pulse rounded-xl bg-primary/25" /></div>;
   if (!user) {
@@ -53,7 +62,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
         </button>
       </SidebarHeader>
       <SidebarContent className="px-2 pb-3">
-        <div className="mb-3 px-1 group-data-[collapsible=icon]:hidden"><GlobalSearch /></div>
+        <div className="mb-3 px-1 group-data-[collapsible=icon]:hidden"><GlobalSearch enableShortcut /></div>
         <SidebarMenu className="gap-1">
           {navigation.map(item => <SidebarMenuItem key={item.path}>
             <SidebarMenuButton isActive={location === item.path} onClick={() => setLocation(item.path)} tooltip={item.label} className="h-10 rounded-lg text-[13px]">
@@ -73,9 +82,10 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
       <header className="sticky top-0 z-30 flex min-h-[84px] items-center gap-3 border-b border-border/70 bg-background/90 px-4 py-3 backdrop-blur-xl md:px-7">
         {isMobile ? <SidebarTrigger className="h-10 w-10 rounded-xl border border-border bg-card"><Menu className="h-4 w-4" /></SidebarTrigger> : <SidebarTrigger className="h-9 w-9 rounded-lg text-muted-foreground" />}
         <div className="hidden min-w-0 sm:block"><p className="eyebrow">Espace opérationnel</p><h1 className="truncate text-lg font-semibold tracking-tight">{active.label}</h1></div>
-        <div className="ml-auto flex min-w-0 flex-1 items-center justify-end gap-2 md:gap-3"><div className="hidden w-full max-w-md md:block"><GlobalSearch /></div><Button variant="outline" size="icon" className="relative rounded-xl border-border bg-card md:hidden" onClick={() => setLocation("/participants")} aria-label="Rechercher"><SearchCheck className="h-4 w-4" /></Button><Button variant="outline" className="hidden h-10 rounded-xl border-border bg-card px-3 sm:inline-flex" onClick={toggleTheme} aria-label={theme === "light" ? "Activer le mode sombre" : "Activer le mode clair"} aria-pressed={theme === "dark"}><span className="mr-2 grid h-5 w-5 place-items-center rounded-full bg-muted">{theme === "light" ? <Moon className="h-3.5 w-3.5" /> : <Sun className="h-3.5 w-3.5" />}</span><span className="text-xs font-medium">{theme === "light" ? "Mode sombre" : "Mode clair"}</span></Button><Button variant="outline" size="icon" className="rounded-xl border-border bg-card sm:hidden" onClick={toggleTheme} aria-label={theme === "light" ? "Activer le mode sombre" : "Activer le mode clair"} aria-pressed={theme === "dark"}>{theme === "light" ? <Moon className="h-4 w-4" /> : <Sun className="h-4 w-4" />}</Button><Button variant="outline" size="icon" className="relative rounded-xl border-border bg-card" onClick={() => setLocation("/notifications")} aria-label="Notifications"><Bell className="h-4 w-4" /><span className="absolute right-1.5 top-1.5 h-1.5 w-1.5 rounded-full bg-destructive" /></Button></div>
+        <div className="ml-auto flex min-w-0 flex-1 items-center justify-end gap-2 md:gap-3"><div className="hidden w-full max-w-md md:block"><GlobalSearch /></div><Button variant="outline" size="icon" className="relative rounded-xl border-border bg-card md:hidden" onClick={() => setSearchOpen(true)} aria-label="Rechercher"><SearchCheck className="h-4 w-4" /></Button><Button variant="outline" className="hidden h-10 rounded-xl border-border bg-card px-3 sm:inline-flex" onClick={toggleTheme} aria-label={theme === "light" ? "Activer le mode sombre" : "Activer le mode clair"} aria-pressed={theme === "dark"}><span className="mr-2 grid h-5 w-5 place-items-center rounded-full bg-muted">{theme === "light" ? <Moon className="h-3.5 w-3.5" /> : <Sun className="h-3.5 w-3.5" />}</span><span className="text-xs font-medium">{theme === "light" ? "Mode sombre" : "Mode clair"}</span></Button><Button variant="outline" size="icon" className="rounded-xl border-border bg-card sm:hidden" onClick={toggleTheme} aria-label={theme === "light" ? "Activer le mode sombre" : "Activer le mode clair"} aria-pressed={theme === "dark"}>{theme === "light" ? <Moon className="h-4 w-4" /> : <Sun className="h-4 w-4" />}</Button><Button variant="outline" size="icon" className="relative rounded-xl border-border bg-card" onClick={() => setLocation("/notifications")} aria-label="Notifications"><Bell className="h-4 w-4" /><span className="absolute right-1.5 top-1.5 h-1.5 rounded-full bg-destructive" /></Button></div>
       </header>
       <main className="mx-auto w-full max-w-[1600px] p-4 md:p-7">{children}</main>
+      <Dialog open={searchOpen} onOpenChange={setSearchOpen}><DialogContent className="top-[18%] max-w-xl translate-y-0 rounded-2xl p-5"><DialogHeader><DialogTitle>Recherche globale</DialogTitle><DialogDescription>Recherchez un participant, un membre du personnel ou une activité. Raccourci : <kbd className="rounded border border-border bg-muted px-1.5 py-0.5 text-xs">⌘/Ctrl K</kbd> ou <kbd className="rounded border border-border bg-muted px-1.5 py-0.5 text-xs">/</kbd>.</DialogDescription></DialogHeader><GlobalSearch autoFocus /></DialogContent></Dialog>
     </SidebarInset>
   </SidebarProvider>;
 }

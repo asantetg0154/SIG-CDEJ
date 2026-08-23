@@ -133,6 +133,18 @@ export const activityParticipants = mysqlTable(
   table => [index("activity_participant_idx").on(table.activityId, table.participantId)],
 );
 
+export const activityStaffAssignments = mysqlTable(
+  "activityStaffAssignments",
+  {
+    id: int("id").autoincrement().primaryKey(),
+    activityId: int("activityId").notNull(),
+    staffId: int("staffId").notNull(),
+    assignmentType: mysqlEnum("assignmentType", ["facilitation", "support", "logistics", "nutrition", "supervision"]).default("support").notNull(),
+    createdAt: timestamp("createdAt").defaultNow().notNull(),
+  },
+  table => [index("activity_staff_activity_idx").on(table.activityId), index("activity_staff_person_idx").on(table.staffId)],
+);
+
 export const attendanceRecords = mysqlTable(
   "attendanceRecords",
   {

@@ -41,7 +41,7 @@ export const appRouter = router({
   dashboard: router({
     summary: protectedProcedure.input(z.object({ period: z.enum(["week", "month", "quarter"]).default("month") })).query(async ({ input, ctx }) => {
       requireDomain(ctx.user, "participants");
-      return getDashboardSnapshot(input.period, ctx.user.role === "admin" || canAccessDomain(ctx.user.cdejRole, "finance"));
+      return getDashboardSnapshot(input.period, ctx.user.role === "admin" || canAccessDomain(ctx.user.cdejRole, "finance"), { userId: ctx.user.id, role: ctx.user.cdejRole });
     }),
   }),
   directory: router({

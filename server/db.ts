@@ -2,6 +2,7 @@ import { and, desc, eq, sql } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/mysql2";
 import {
   activities,
+  activityStaffAssignments,
   attendanceRecords,
   auditLogs,
   documents,
@@ -59,6 +60,12 @@ export async function upsertUser(user: InsertUser): Promise<void> {
     updateSet.role = user.role;
   }
   await db.insert(users).values(values).onDuplicateKeyUpdate({ set: updateSet });
+  if (user.email) {
+    const account = await db.select().from(users).where(eq(users.openId, user.openId)).limit(1);
+    if (account[0]) {
+      await db.update(staffProfiles).set({ userId: account[0].id }).where(eq(staffProfiles.email, user.email));
+    }
+  }
 }
 
 export async function getUserByOpenId(openId: string) {
@@ -93,7 +100,24 @@ async function hasRows(table: typeof participants) {
  */
 export async function ensureDemoData() {
   const db = await getDb();
-  if (!db || (await hasRows(participants))) return;
+  if (!db) return;
+  if (await hasRows(participants)) {
+    const existingAssignments = await db.select().from(activityStaffAssignments).limit(1);
+    if (!existingAssignments.length) {
+      const [activityRows, staffRows] = await Promise.all([db.select().from(activities), db.select().from(staffProfiles)]);
+      const byCode = new Map(staffRows.map(member => [member.employeeCode, member]));
+      const reading = activityRows.find(activity => activity.title === "Atelier de lecture");
+      const health = activityRows.find(activity => activity.title === "Sensibilisation santé");
+      const leaders = activityRows.find(activity => activity.title === "Club des jeunes leaders");
+      const pending = [
+        reading && byCode.get("CDEJ-006") ? { activityId: reading.id, staffId: byCode.get("CDEJ-006")!.id, assignmentType: "support" as const } : null,
+        health && byCode.get("CDEJ-007") ? { activityId: health.id, staffId: byCode.get("CDEJ-007")!.id, assignmentType: "nutrition" as const } : null,
+        leaders && byCode.get("CDEJ-006") ? { activityId: leaders.id, staffId: byCode.get("CDEJ-006")!.id, assignmentType: "supervision" as const } : null,
+      ].filter((row): row is { activityId: number; staffId: number; assignmentType: "support" | "nutrition" | "supervision" } => Boolean(row));
+      if (pending.length) await db.insert(activityStaffAssignments).values(pending);
+    }
+    return;
+  }
 
   await db.insert(staffProfiles).values([
     { employeeCode: "CDEJ-001", firstName: "Élie", lastName: "Kamba", gender: "male", cdejRole: "pastor", phone: "+243 810 000 001", email: "elie.kamba@example.test", status: "active", startedAt: new Date("2024-01-10") },
@@ -136,6 +160,14 @@ export async function ensureDemoData() {
     { title: "Atelier de lecture", category: "Éducation", objective: "Renforcer la compréhension écrite", location: "Salle Espoir", startsAt: new Date("2026-08-21T09:00:00Z"), endsAt: new Date("2026-08-21T10:30:00Z"), status: "completed", facilitatorId: facilitatorA.id, groupId: espoir.id },
     { title: "Sensibilisation santé", category: "Santé", objective: "Promouvoir les bonnes pratiques d'hygiène", location: "Salle polyvalente", startsAt: new Date("2026-08-24T11:00:00Z"), endsAt: new Date("2026-08-24T12:00:00Z"), status: "planned", facilitatorId: facilitatorB.id, groupId: avenir.id },
     { title: "Club des jeunes leaders", category: "Leadership", objective: "Développer les compétences de prise de parole", location: "Espace Impact", startsAt: new Date("2026-08-27T14:00:00Z"), endsAt: new Date("2026-08-27T15:30:00Z"), status: "planned", facilitatorId: facilitatorB.id, groupId: impact.id },
+  ]);
+
+  const seededActivities = await db.select().from(activities);
+  const byActivity = new Map(seededActivities.map(activity => [activity.title, activity]));
+  await db.insert(activityStaffAssignments).values([
+    { activityId: byActivity.get("Atelier de lecture")!.id, staffId: byCode.get("CDEJ-006")!.id, assignmentType: "support" },
+    { activityId: byActivity.get("Sensibilisation santé")!.id, staffId: byCode.get("CDEJ-007")!.id, assignmentType: "nutrition" },
+    { activityId: byActivity.get("Club des jeunes leaders")!.id, staffId: byCode.get("CDEJ-006")!.id, assignmentType: "supervision" },
   ]);
 
   await db.insert(attendanceRecords).values(seededParticipants.map((participant, index) => ({
@@ -237,27 +269,36 @@ export async function getInventoryList() {
   return rows.map(row => ({ ...row, supplierName: row.supplierId ? suppliersById.get(row.supplierId) ?? "—" : "—", isLow: Number(row.quantity) <= Number(row.alertThreshold) }));
 }
 
-export async function getDashboardSnapshot(period: "week" | "month" | "quarter", includeFinance = false) {
+export async function getDashboardSnapshot(period: "week" | "month" | "quarter", includeFinance = false, scope?: { userId: number; role: "pastor" | "cpc" | "coordinator" | "facilitator" | "volunteer" | "participant" }) {
   await ensureDemoData();
   const db = await getDb();
   if (!db) return null;
-  const [participantRows, staffRows, activityRows, attendanceRows, leaveRows, educationRows, healthRows, inventoryRows, notificationRows, financeRows] = await Promise.all([
-    db.select().from(participants), db.select().from(staffProfiles), db.select().from(activities), db.select().from(attendanceRecords), db.select().from(leaveRequests), db.select().from(educationRecords), db.select().from(healthRecords), db.select().from(inventoryItems), db.select().from(notifications).orderBy(desc(notifications.createdAt)), includeFinance ? db.select().from(financeTransactions) : Promise.resolve([]),
+  const [allParticipantRows, staffRows, allActivityRows, attendanceRows, leaveRows, educationRows, healthRows, inventoryRows, notificationRows, financeRows, assignments, allGroupRows] = await Promise.all([
+    db.select().from(participants), db.select().from(staffProfiles), db.select().from(activities), db.select().from(attendanceRecords), db.select().from(leaveRequests), db.select().from(educationRecords), db.select().from(healthRecords), db.select().from(inventoryItems), db.select().from(notifications).orderBy(desc(notifications.createdAt)), includeFinance ? db.select().from(financeTransactions) : Promise.resolve([]), db.select().from(activityStaffAssignments), db.select().from(groups),
   ]);
+  const scopedRole = scope?.role === "facilitator" || scope?.role === "volunteer";
+  const staffProfile = scopedRole ? staffRows.find(staff => staff.userId === scope?.userId) : undefined;
+  const assignedActivityIds = new Set(staffProfile ? assignments.filter(assignment => assignment.staffId === staffProfile.id).map(assignment => assignment.activityId) : []);
+  const participantRows = scope?.role === "facilitator" ? allParticipantRows.filter(participant => participant.facilitatorId === staffProfile?.id) : scope?.role === "volunteer" ? [] : allParticipantRows;
+  const activityRows = scope?.role === "facilitator" ? allActivityRows.filter(activity => activity.facilitatorId === staffProfile?.id || assignedActivityIds.has(activity.id)) : scope?.role === "volunteer" ? allActivityRows.filter(activity => assignedActivityIds.has(activity.id)) : allActivityRows;
+  const groupRows = scope?.role === "facilitator" ? allGroupRows.filter(group => group.facilitatorId === staffProfile?.id) : scope?.role === "volunteer" ? [] : allGroupRows;
   const now = new Date();
   const periodStart = new Date(now);
   periodStart.setDate(now.getDate() - (period === "week" ? 7 : period === "month" ? 30 : 90));
   const periodActivities = activityRows.filter(activity => activity.startsAt >= periodStart);
-  const currentAttendance = attendanceRows.slice(-Math.max(1, participantRows.length));
+  const visibleParticipantIds = new Set(participantRows.map(participant => participant.id));
+  const currentAttendance = attendanceRows.filter(record => record.participantId !== null && visibleParticipantIds.has(record.participantId)).slice(-Math.max(1, participantRows.length));
   const attendancePresent = currentAttendance.filter(row => row.status === "present" || row.status === "late").length;
   const ageBuckets = [{ label: "8–11", count: 0 }, { label: "12–15", count: 0 }, { label: "16–18", count: 0 }];
   participantRows.forEach(participant => { const age = ageFrom(participant.birthDate); const bucket = age <= 11 ? ageBuckets[0] : age <= 15 ? ageBuckets[1] : ageBuckets[2]; bucket.count += 1; });
   const groupCounts = new Map<number | null, number>();
   participantRows.forEach(participant => groupCounts.set(participant.groupId, (groupCounts.get(participant.groupId) ?? 0) + 1));
-  const groupRows = await db.select().from(groups);
+  const scopedNotifications = scopedRole ? notificationRows.filter(item => item.recipientUserId === scope?.userId) : notificationRows;
+  const includeInventoryAlerts = !scopedRole || (scope?.role === "volunteer" && Boolean(staffProfile && assignedActivityIds.size));
+  const inventoryAlerts = includeInventoryAlerts ? inventoryRows.filter(item => Number(item.quantity) <= Number(item.alertThreshold)).map(item => ({ id: `stock-${item.id}`, title: `Stock bas : ${item.name}`, message: `${item.quantity} ${item.unit} disponible(s), seuil ${item.alertThreshold}.`, priority: "high" as const, href: "/inventory" })) : [];
   const alerts = [
-    ...notificationRows.filter(item => !item.isRead).slice(0, 4).map(item => ({ id: `notification-${item.id}`, title: item.title, message: item.message, priority: item.priority, href: item.actionUrl ?? "/" })),
-    ...inventoryRows.filter(item => Number(item.quantity) <= Number(item.alertThreshold)).map(item => ({ id: `stock-${item.id}`, title: `Stock bas : ${item.name}`, message: `${item.quantity} ${item.unit} disponible(s), seuil ${item.alertThreshold}.`, priority: "high" as const, href: "/inventory" })),
+    ...scopedNotifications.filter(item => !item.isRead).slice(0, 4).map(item => ({ id: `notification-${item.id}`, title: item.title, message: item.message, priority: item.priority, href: item.actionUrl ?? "/" })),
+    ...inventoryAlerts,
   ].slice(0, 5);
   const financeByCategory = Array.from(new Set(financeRows.map(row => row.category))).map(category => {
     const categoryRows = financeRows.filter(row => row.category === category);
@@ -301,6 +342,7 @@ export async function getDashboardSnapshot(period: "week" | "month" | "quarter",
     groups: groupRows.map(group => ({ label: group.name, count: groupCounts.get(group.id) ?? 0 })),
     education: educationRows.map(row => ({ term: row.termLabel, score: Number(row.averageScore ?? 0), status: row.resultStatus })),
     financeSummary,
+    scope: scopedRole ? { role: scope!.role, linkedProfile: Boolean(staffProfile), assignedActivities: activityRows.length, assignedParticipants: participantRows.length } : null,
     alerts,
   };
 }

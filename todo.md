@@ -22,3 +22,10 @@
 - [x] Extend the dashboard with interactive attendance and finance summary charts while preserving financial access restrictions.
 - [x] Validate the enhanced search, dark-mode, and interactive analytics flows and save an updated project checkpoint.
 - [x] Confirm interactive search-result navigation and dark-theme rendering in an authenticated preview session.
+- [x] Create facilitator and volunteer dashboard variants that surface only their operationally relevant information.
+- [x] Add CSV and PDF exports for attendance and permitted financial dashboard analytics.
+- [x] Add documented keyboard shortcuts that focus and open the global search without a mouse.
+- [x] Validate role-specific views, export behavior, access restrictions, and keyboard search, then save an updated checkpoint.
+- [x] Scope facilitator and volunteer dashboard metrics to their own assignments and operational responsibilities.
+- [x] Make the global search shortcut open a visible, accessible search surface even when the navigation is collapsed or mobile.
+- [x] Verify scoped dashboard data and shortcut-driven search in authenticated facilitator and volunteer user sessions.
