@@ -49,5 +49,8 @@
 - [x] Diagnose the intermittent OAuth login failure on the Vercel deployment.
 - [x] Apply and validate a Vercel-compatible OAuth redirect and session-cookie fix.
 - [ ] Configure the missing Vercel OAuth environment variables and redeploy before testing a live sign-in.
+- [ ] Provide a safe Vercel variable configuration guide distinguishing public settings from secrets that must be generated or obtained from their provider.
+- [x] Remove Vercel-specific deployment configuration and documentation from the GitHub version of the project.
+- [ ] Commit and push the Vercel-free project to the new GitHub repository after its address is confirmed.
 - [x] Push the current stable SIG-CDEJ project state to the requested GitHub repository and verify the remote branch.
 - [x] Re-attempt the reminder migration and confirm every required table, column, and index before implementing the reminder workflow.

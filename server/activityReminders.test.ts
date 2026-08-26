@@ -1,17 +1,11 @@
 import { describe, expect, it } from "vitest";
-import { ACTIVITY_REMINDER_CRON, getVercelCronTaskUid, shouldSendActivityReminder, VERCEL_ACTIVITY_REMINDER_TASK_UID } from "./activityReminders";
+import { ACTIVITY_REMINDER_CRON, shouldSendActivityReminder } from "./activityReminders";
 
 describe("activity reminders", () => {
   const now = new Date("2026-08-23T07:00:00Z");
 
   it("uses the documented daily UTC schedule", () => {
     expect(ACTIVITY_REMINDER_CRON).toBe("0 0 7 * * *");
-  });
-
-  it("accepts only the matching Vercel Cron authorization secret", () => {
-    expect(getVercelCronTaskUid("Bearer valid-secret", "valid-secret")).toBe(VERCEL_ACTIVITY_REMINDER_TASK_UID);
-    expect(getVercelCronTaskUid("Bearer invalid-secret", "valid-secret")).toBeNull();
-    expect(getVercelCronTaskUid(undefined, "valid-secret")).toBeNull();
   });
 
   it("sends only once for planned or active activities inside the configured reminder window", () => {

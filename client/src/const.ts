@@ -11,7 +11,7 @@ type OAuthLoginConfig = {
 
 export function buildOAuthLoginUrl({ oauthPortalUrl, appId, origin, nonce }: OAuthLoginConfig) {
   if (!oauthPortalUrl || !appId) {
-    throw new Error("La connexion OAuth n’est pas configurée. Configurez VITE_OAUTH_PORTAL_URL et VITE_APP_ID dans Vercel, puis redéployez.");
+    throw new Error("La connexion OAuth n’est pas configurée. Configurez VITE_OAUTH_PORTAL_URL et VITE_APP_ID dans l’environnement de déploiement, puis redéployez.");
   }
   const redirectUri = `${origin}/api/oauth/callback`;
   const state = encodeOAuthState({ redirectUri, nonce });

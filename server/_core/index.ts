@@ -70,6 +70,6 @@ async function startServer() {
   });
 }
 
-if (process.env.NODE_ENV !== "test" && process.env.VERCEL !== "1") {
+if (process.env.NODE_ENV !== "test") {
   startServer().catch(console.error);
 }
