@@ -151,8 +151,10 @@ function vitePluginManusDebugCollector(): Plugin {
 }
 
 const plugins = [react(), tailwindcss(), jsxLocPlugin(), vitePluginManusRuntime(), vitePluginManusDebugCollector()];
+const isGitHubPagesBuild = process.env.VITE_GITHUB_PAGES === "true";
 
 export default defineConfig({
+  base: isGitHubPagesBuild ? "/SIG-CDEJ/" : "/",
   plugins,
   resolve: {
     alias: {

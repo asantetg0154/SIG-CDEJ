@@ -4,6 +4,7 @@ import DashboardLayout from "@/components/DashboardLayout";
 import ErrorBoundary from "@/components/ErrorBoundary";
 import { ThemeProvider } from "@/contexts/ThemeContext";
 import DashboardPage from "@/pages/DashboardPage";
+import GitHubPagesLanding from "@/pages/GitHubPagesLanding";
 import { EducationPage, FinancePage, HealthPage, InventoryPage, NutritionPage } from "@/pages/FollowUpPages";
 import NotFound from "@/pages/NotFound";
 import ParticipantsPage from "@/pages/ParticipantsPage";
@@ -40,5 +41,8 @@ function Router() {
 }
 
 export default function App() {
+  if (import.meta.env.VITE_GITHUB_PAGES === "true") {
+    return <ErrorBoundary><ThemeProvider defaultTheme="light" switchable><TooltipProvider><Toaster richColors position="top-right" /><GitHubPagesLanding /></TooltipProvider></ThemeProvider></ErrorBoundary>;
+  }
   return <ErrorBoundary><ThemeProvider defaultTheme="light" switchable><TooltipProvider><Toaster richColors position="top-right" /><Router /></TooltipProvider></ThemeProvider></ErrorBoundary>;
 }

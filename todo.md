@@ -54,3 +54,7 @@
 - [x] Commit and push the Vercel-free project to the new GitHub repository after its address is confirmed.
 - [x] Push the current stable SIG-CDEJ project state to the requested GitHub repository and verify the remote branch.
 - [x] Re-attempt the reminder migration and confirm every required table, column, and index before implementing the reminder workflow.
+- [x] Diagnose the GitHub Pages rendering failure at the /SIG-CDEJ/ subpath.
+- [x] Configure a GitHub Pages-compatible frontend build, routing fallback, and publication workflow.
+- [ ] Validate and push the GitHub Pages deployment correction to the main branch.
+- [x] Add and validate a GitHub Pages deep-link fallback for the /SIG-CDEJ/ static presentation.

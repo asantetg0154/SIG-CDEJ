@@ -3,7 +3,8 @@
   "short_name": "SIG-CDEJ",
   "description": "Système intégré de gestion du Centre de Développement des Enfants et Jeunes.",
   "lang": "fr",
-  "start_url": "/",
+  "start_url": ".",
+  "scope": ".",
   "display": "standalone",
   "background_color": "#fdfcf8",
   "theme_color": "#276e61"
