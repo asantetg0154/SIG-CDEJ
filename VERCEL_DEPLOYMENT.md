@@ -42,6 +42,8 @@ Ajoutez ces variables dans **Vercel → Project Settings → Environment Variabl
 
 Après le premier déploiement, ajoutez `https://sig-cdej.vercel.app/api/oauth/callback` aux URL de redirection autorisées du fournisseur OAuth. Configurez également les redirections correspondantes pour chaque domaine Preview si vous activez l’authentification sur les aperçus.
 
+> Les variables dont le nom commence par `VITE_` sont intégrées au bundle React pendant le build. Après toute modification de `VITE_APP_ID` ou `VITE_OAUTH_PORTAL_URL`, lancez un **nouveau redeploy** Vercel ; une simple modification de variable ne met pas à jour le JavaScript déjà publié.
+
 ## Redéploiement
 
 Après avoir enregistré les réglages et variables, utilisez **Redeploy** sur le dernier déploiement Vercel. La page d’accueil doit alors charger le client React. Les requêtes `/api/trpc/*`, `/api/oauth/*` et `/api/scheduled/activity-reminders` doivent être traitées par la fonction catch-all de l’API.

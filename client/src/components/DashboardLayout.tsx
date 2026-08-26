@@ -41,7 +41,16 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   const [location, setLocation] = useLocation();
   const isMobile = useIsMobile();
   const [searchOpen, setSearchOpen] = useState(false);
+  const [loginError, setLoginError] = useState<string | null>(null);
   const active = navigation.find(item => item.path === location) ?? navigation[0];
+  const handleLogin = () => {
+    try {
+      setLoginError(null);
+      startLogin();
+    } catch (error) {
+      setLoginError(error instanceof Error ? error.message : "La connexion ne peut pas être initialisée.");
+    }
+  };
 
   useEffect(() => {
     const openSearch = () => setSearchOpen(true);
@@ -51,7 +60,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
 
   if (loading) return <div className="flex min-h-screen items-center justify-center bg-background"><div className="h-9 w-9 animate-pulse rounded-xl bg-primary/25" /></div>;
   if (!user) {
-    return <div className="grid min-h-screen place-items-center bg-[radial-gradient(circle_at_top_left,_hsl(var(--accent))_0%,_transparent_32%),linear-gradient(145deg,hsl(var(--background)),hsl(var(--muted)))] p-5"><div className="surface-card w-full max-w-md p-8 text-center"><div className="mx-auto mb-5 grid h-14 w-14 place-items-center rounded-2xl bg-primary text-primary-foreground"><HeartPulse className="h-7 w-7" /></div><p className="eyebrow">SIG-CDEJ</p><h1 className="mt-2 text-2xl font-semibold tracking-tight">Accès sécurisé au centre</h1><p className="mt-3 text-sm leading-6 text-muted-foreground">Connectez-vous pour accéder aux outils et aux données autorisés selon votre rôle.</p><Button className="mt-7 w-full" size="lg" onClick={() => startLogin()}>Se connecter</Button></div></div>;
+    return <div className="grid min-h-screen place-items-center bg-[radial-gradient(circle_at_top_left,_hsl(var(--accent))_0%,_transparent_32%),linear-gradient(145deg,hsl(var(--background)),hsl(var(--muted)))] p-5"><div className="surface-card w-full max-w-md p-8 text-center"><div className="mx-auto mb-5 grid h-14 w-14 place-items-center rounded-2xl bg-primary text-primary-foreground"><HeartPulse className="h-7 w-7" /></div><p className="eyebrow">SIG-CDEJ</p><h1 className="mt-2 text-2xl font-semibold tracking-tight">Accès sécurisé au centre</h1><p className="mt-3 text-sm leading-6 text-muted-foreground">Connectez-vous pour accéder aux outils et aux données autorisés selon votre rôle.</p>{loginError ? <p role="alert" className="mt-4 rounded-xl border border-destructive/25 bg-destructive/10 px-3 py-2 text-left text-xs leading-5 text-destructive">{loginError}</p> : null}<Button className="mt-7 w-full" size="lg" onClick={handleLogin}>Se connecter</Button></div></div>;
   }
 
   return <SidebarProvider>
