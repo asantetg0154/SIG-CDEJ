@@ -20,6 +20,8 @@ describe("GitHub Pages static presentation configuration", () => {
     expect(workflow).toContain("actions/upload-pages-artifact@v3");
     expect(workflow).toContain("actions/deploy-pages@v4");
     expect(workflow).toContain("pnpm build:pages");
+    expect(workflow).toContain("uses: pnpm/action-setup@v4");
+    expect(workflow).not.toContain("version: 10");
     expect(landing).toContain("Version publique statique");
   });
 
