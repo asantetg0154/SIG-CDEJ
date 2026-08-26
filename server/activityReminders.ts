@@ -5,6 +5,12 @@ import { getDb, logAudit } from "./db";
 import { sdk } from "./_core/sdk";
 
 export const ACTIVITY_REMINDER_CRON = "0 0 7 * * *";
+export const VERCEL_ACTIVITY_REMINDER_TASK_UID = "vercel-activity-reminders";
+
+export function getVercelCronTaskUid(authorization: string | undefined, cronSecret: string | undefined) {
+  if (!cronSecret || authorization !== `Bearer ${cronSecret}`) return null;
+  return VERCEL_ACTIVITY_REMINDER_TASK_UID;
+}
 
 export function shouldSendActivityReminder(status: string, startsAt: Date, reminderSentAt: Date | null, now: Date, leadHours: number) {
   const deadline = new Date(now.getTime() + leadHours * 60 * 60 * 1000);
@@ -53,6 +59,11 @@ export async function runActivityReminders(taskUid: string) {
 
 export async function activityReminderHandler(req: Request, res: Response) {
   try {
+    const vercelTaskUid = getVercelCronTaskUid(req.headers.authorization, process.env.CRON_SECRET);
+    if (vercelTaskUid) {
+      const result = await runActivityReminders(vercelTaskUid);
+      return res.json(result);
+    }
     const user = await sdk.authenticateRequest(req);
     if (!user.isCron || !user.taskUid) return res.status(403).json({ error: "cron-only" });
     const result = await runActivityReminders(user.taskUid);

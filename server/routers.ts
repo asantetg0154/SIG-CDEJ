@@ -11,7 +11,7 @@ import { systemRouter } from "./_core/systemRouter";
 import { protectedProcedure, publicProcedure, router } from "./_core/trpc";
 import { storagePut } from "./storage";
 import { createHeartbeatJob, updateHeartbeatJob } from "./_core/heartbeat";
-import { ACTIVITY_REMINDER_CRON } from "./activityReminders";
+import { ACTIVITY_REMINDER_CRON, VERCEL_ACTIVITY_REMINDER_TASK_UID } from "./activityReminders";
 
 function requireDomain(user: { role: "user" | "admin"; cdejRole: "pastor" | "cpc" | "coordinator" | "facilitator" | "volunteer" | "participant" }, domain: SecureDomain) {
   if (user.role === "admin" || canAccessDomain(user.cdejRole, domain)) return;
@@ -189,7 +189,9 @@ export const appRouter = router({
       if (!settings) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR" });
       const sessionToken = parseCookie(ctx.req.headers.cookie ?? "")[COOKIE_NAME] ?? "";
       let taskUid = settings.scheduleCronTaskUid;
-      if (input.enabled && !taskUid) {
+      if (process.env.VERCEL === "1") {
+        taskUid = VERCEL_ACTIVITY_REMINDER_TASK_UID;
+      } else if (input.enabled && !taskUid) {
         const job = await createHeartbeatJob({ name: `cdej-activity-reminders-${settings.id}`, cron: ACTIVITY_REMINDER_CRON, path: "/api/scheduled/activity-reminders", description: "Rappels internes quotidiens des activités affectées du SIG-CDEJ" }, sessionToken);
         taskUid = job.taskUid;
       } else if (taskUid) {

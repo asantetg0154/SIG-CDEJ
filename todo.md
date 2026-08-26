@@ -40,5 +40,11 @@
 - [x] Verify assignment creation/removal, deduplicated notification delivery, and mobile rendering in the authenticated preview.
 - [ ] Create and remove a real activity assignment in the authenticated preview and confirm each state change in the filtered list.
 - [ ] Verify that a linked recipient sees one generated activity reminder in the notification center during an authenticated preview session.
+- [x] Diagnose why the Vercel deployment differs from the SIG-CDEJ project and repository state.
+- [x] Apply and validate a deployment-compatible fix, then document the required Vercel configuration.
+- [x] Add a Vercel serverless entry point, SPA rewrites, and static client output configuration compatible with the Express and tRPC API.
+- [x] Document the required Vercel environment variables and deployment settings without storing production secrets in the repository.
+- [x] Validate the Vercel build configuration locally and checkpoint the deployment adapter.
+- [x] Adapt the internal activity-reminder trigger to accept authenticated Vercel Cron requests without relying on the Manus scheduling SDK.
 - [ ] Push the current stable SIG-CDEJ project state to the requested GitHub repository and verify the remote branch.
 - [x] Re-attempt the reminder migration and confirm every required table, column, and index before implementing the reminder workflow.
