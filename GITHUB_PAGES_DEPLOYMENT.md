@@ -8,6 +8,8 @@ La première prévisualisation Vite a chargé le document HTML avec le bon titre
 
 Après le succès du workflow de publication, la première requête vers l’URL publique a encore renvoyé la page Jekyll historique. Cette réponse est cohérente avec un délai de propagation du CDN GitHub Pages ; la vérification finale doit donc être répétée après propagation avant de conclure que le déploiement public est à jour.
 
+La vérification finale, après réussite du workflow de déploiement corrigé, a confirmé que `https://asantetg0154.github.io/SIG-CDEJ/` sert bien la vitrine SIG-CDEJ, ses ressources sous `/SIG-CDEJ/` et les protections de présentation statique annoncées.
+
 ## Correction appliquée
 
 Le workflow GitHub Actions placé dans `.github/workflows/deploy-pages.yml` construit le client Vite avec le préfixe `/SIG-CDEJ/` puis publie exclusivement `dist/public` sur GitHub Pages. Le script de build désactive le traitement Jekyll au moyen de `.nojekyll`, afin que les chemins de ressources soient conservés tels que générés par Vite. Il produit aussi un `404.html` identique à `index.html` : un lien profond sous `/SIG-CDEJ/` continue donc d’afficher la présentation statique lorsque GitHub Pages ne trouve pas de fichier correspondant.

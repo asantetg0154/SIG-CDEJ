@@ -56,5 +56,5 @@
 - [x] Re-attempt the reminder migration and confirm every required table, column, and index before implementing the reminder workflow.
 - [x] Diagnose the GitHub Pages rendering failure at the /SIG-CDEJ/ subpath.
 - [x] Configure a GitHub Pages-compatible frontend build, routing fallback, and publication workflow.
-- [ ] Validate and push the GitHub Pages deployment correction to the main branch.
+- [x] Validate and push the GitHub Pages deployment correction to the main branch.
 - [x] Add and validate a GitHub Pages deep-link fallback for the /SIG-CDEJ/ static presentation.
